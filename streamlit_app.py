@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 import cv2
 import streamlit as st
 
@@ -78,6 +79,7 @@ if input_btn==INPUT_SOURCE_TYPE[0]:    # File Upload
 
                 frame_container.image(frame)
                 detection_container.image(img_clone)
+                time.sleep(0.1)
                 
             # Release the VideoCapture object
             cap.release()
