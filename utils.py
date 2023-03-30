@@ -1,10 +1,12 @@
 import cv2
+import os
 import numpy as np
 import streamlit as st
 
-from copy import deepcopy
 from functools import partial
 from ultralytics import YOLO
+
+MODEL_DIR = 'models/detection/'
 
 
 @st.cache_resource
@@ -42,3 +44,7 @@ def detect(img, model, DETECTION_THRESHOLD):
     list(map(partial(postprocess, classes=classes, img_clone=img), boxes))
     img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
     return img
+
+
+def get_all_detection_models():
+    return [model_name for model_name in os.listdir(MODEL_DIR) if model_name.endswith('.pt')]

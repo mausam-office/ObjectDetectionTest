@@ -4,6 +4,7 @@ import cv2
 import streamlit as st
 
 from PIL import Image
+from utils import MODEL_DIR
 from utils import load_model, detect, get_extension, get_all_detection_models
 
 
@@ -11,7 +12,8 @@ INPUT_SOURCE_TYPE = ('File Upload', 'Camera')
 TASK_TYPE = ('Image Classification', 'Object Detection')
 INPUT_DATA_TYPE = ('Video', 'Image')
 DETECTION_THRESHOLD = 0.55
-
+model = None
+assert os.path.exists(MODEL_DIR)
 
 st.write("<B><h2>Inference on Deep Learnig Models</h2></B>", unsafe_allow_html=True)
 
@@ -22,13 +24,21 @@ if task_btn==TASK_TYPE[0]:
     st.stop()
 
 elif task_btn==TASK_TYPE[1]:
+    models = get_all_detection_models()
+    model_name = st.sidebar.selectbox(
+        "Models", [''.join(model.split('.')[:-1]) for model in models]
+    )
+    model_name = os.path.join(MODEL_DIR, model_name + '.pt')
+    assert os.path.exists(model_name)
+    model = load_model(model_name)
+    
     DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", 0.00, 1.0, step=0.01)
 
-    models = get_all_detection_models()
-    model_name = st.sidebar.selectbox("Models", models)
-    model = load_model(model_name)
+if model is None:
+    st.error("Model is not loaded.")
 
 input_btn = st.sidebar.selectbox("Input Type", INPUT_SOURCE_TYPE)
+
 
 if input_btn==INPUT_SOURCE_TYPE[0]:    # File Upload
     with st.expander("Details"):
