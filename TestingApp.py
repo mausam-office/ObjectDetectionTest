@@ -4,7 +4,7 @@ import cv2
 import streamlit as st
 
 from PIL import Image
-from utils import load_model, detect, get_extension
+from utils import load_model, detect, get_extension, get_all_detection_models
 
 
 INPUT_SOURCE_TYPE = ('File Upload', 'Camera')
@@ -12,7 +12,6 @@ TASK_TYPE = ('Image Classification', 'Object Detection')
 INPUT_DATA_TYPE = ('Video', 'Image')
 DETECTION_THRESHOLD = 0.55
 
-model = load_model('models/best.pt')
 
 st.write("<B><h2>Inference on Deep Learnig Models</h2></B>", unsafe_allow_html=True)
 
@@ -25,6 +24,9 @@ if task_btn==TASK_TYPE[0]:
 elif task_btn==TASK_TYPE[1]:
     DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", 0.00, 1.0, step=0.01)
 
+    models = get_all_detection_models()
+    model_name = st.sidebar.selectbox("Models", models)
+    model = load_model(model_name)
 
 input_btn = st.sidebar.selectbox("Input Type", INPUT_SOURCE_TYPE)
 
@@ -33,8 +35,6 @@ if input_btn==INPUT_SOURCE_TYPE[0]:    # File Upload
         st.info("Input Source is Uploaded file.")
         st.write("You can select image or video file.")
     
-    
-
     input_data_type = st.radio("Choose input medium.", INPUT_DATA_TYPE, key='tab_upload_input_data_type')
 
     if input_data_type==INPUT_DATA_TYPE[0]:    # video
