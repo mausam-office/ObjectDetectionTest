@@ -15,7 +15,7 @@ from utils import load_model, detect, get_extension, get_all_detection_models
 INPUT_SOURCE_TYPE = ('File Upload', 'Camera')
 TASK_TYPE = ('Image Classification', 'Object Detection')
 INPUT_DATA_TYPE = ('Video', 'Image')
-DETECTION_THRESHOLD = 0.55
+INITIAL_DETECTION_THRESHOLD = 0.55
 model = None
 
 assert os.path.exists(MODEL_DIR)
@@ -37,7 +37,7 @@ elif task_btn==TASK_TYPE[1]:
     assert os.path.exists(model_name)
     model = load_model(model_name)
     
-    DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", 0.00, 1.0, step=0.01)
+    DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", min_value=0.00, max_value=1.0, value=INITIAL_DETECTION_THRESHOLD, step=0.01)
 
 def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
     frame = frame.to_ndarray(format='bgr24')
@@ -127,19 +127,21 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:  # Camera
         input_data_type = st.radio("Choose input medium.", INPUT_DATA_TYPE, key='tab_camera_input_data_type')
 
         if input_data_type == INPUT_DATA_TYPE[0]:   # Video
-            # st.info(f"Source type {input_data_type} is not yet implemented.")
-            # st.stop()
-            if platform=="linux" or platform=="linux2":
-                webrtc_streamer(
-                    key='webcam', 
-                    video_frame_callback=video_frame_callback,
-                    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-                )
-            elif platform=='win32':
+            if platform=='win32':
                 webrtc_streamer(
                     key='webcam', 
                     video_frame_callback=video_frame_callback,
                 )
+            else:
+                st.info(f"Source type {input_data_type} is not yet implemented.")
+                st.stop()
+            # has issue with ICE and TURN servers
+            # elif platform=="linux" or platform=="linux2":
+            #     webrtc_streamer(
+            #         key='webcam', 
+            #         video_frame_callback=video_frame_callback,
+            #         rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+            #     )
 
         elif input_data_type == INPUT_DATA_TYPE[1]:   # Image
             img = st.camera_input(label="Capture Image")
