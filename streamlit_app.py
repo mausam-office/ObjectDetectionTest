@@ -79,7 +79,7 @@ if input_btn==INPUT_SOURCE_TYPE[0]:    # File Upload
 
                 frame_container.image(frame)
                 detection_container.image(img_clone)
-                time.sleep(0.1)
+                time.sleep(0.5)
                 
             # Release the VideoCapture object
             cap.release()
