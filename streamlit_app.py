@@ -1,10 +1,13 @@
+import av
+import cv2
 import os
 import tempfile
 import time
-import cv2
 import streamlit as st
 
 from PIL import Image
+from sys import platform
+from streamlit_webrtc import webrtc_streamer
 from utils import MODEL_DIR
 from utils import load_model, detect, get_extension, get_all_detection_models
 
@@ -14,6 +17,7 @@ TASK_TYPE = ('Image Classification', 'Object Detection')
 INPUT_DATA_TYPE = ('Video', 'Image')
 DETECTION_THRESHOLD = 0.55
 model = None
+
 assert os.path.exists(MODEL_DIR)
 
 st.write("<B><h2>Inference on Deep Learnig Models</h2></B>", unsafe_allow_html=True)
@@ -35,6 +39,12 @@ elif task_btn==TASK_TYPE[1]:
     
     DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", 0.00, 1.0, step=0.01)
 
+def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
+    frame = frame.to_ndarray(format='bgr24')
+    frame = detect(frame, model, DETECTION_THRESHOLD)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    return av.VideoFrame.from_ndarray(frame, format="bgr24")
+
 if model is None:
     st.error("Model is not loaded.")
 
@@ -49,7 +59,7 @@ if input_btn==INPUT_SOURCE_TYPE[0]:    # File Upload
     input_data_type = st.radio("Choose input medium.", INPUT_DATA_TYPE, key='tab_upload_input_data_type')
 
     if input_data_type==INPUT_DATA_TYPE[0]:    # video
-        video_file = st.file_uploader(label="Upload file", type=['.mp4', '.MOV'])
+        video_file = st.file_uploader(label="Upload file", type=['.mp4', '.MOV', '.asf'])
         if video_file is None:
             st.stop()
 
@@ -79,7 +89,14 @@ if input_btn==INPUT_SOURCE_TYPE[0]:    # File Upload
 
                 frame_container.image(frame)
                 detection_container.image(img_clone)
-                time.sleep(0.5)
+                # paused as hosting machine is linux and requires
+                # some time to render in front-end
+                if platform == "linux" or platform == "linux2":
+                    time.sleep(0.5)
+                elif platform=="darwin":
+                    time.sleep(0.01)
+                elif platform=="win32":
+                    time.sleep(0.01)
                 
             # Release the VideoCapture object
             cap.release()
@@ -109,21 +126,23 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:  # Camera
         
         input_data_type = st.radio("Choose input medium.", INPUT_DATA_TYPE, key='tab_camera_input_data_type')
 
-        if input_data_type == INPUT_DATA_TYPE[0]:
+        if input_data_type == INPUT_DATA_TYPE[0]:   # Video
             st.info(f"Source type {input_data_type} is not yet implemented.")
-            st.stop()
+            # st.stop()
+            webrtc_streamer(key='webcam', video_frame_callback=video_frame_callback)
 
-        img = st.camera_input(label="Capture Image")
-        if img is None:
-            st.stop()
+        elif input_data_type == INPUT_DATA_TYPE[1]:   # Image
+            img = st.camera_input(label="Capture Image")
+            if img is None:
+                st.stop()
 
-        filename = img.name
-        print(f"filename is {filename} with extension {get_extension(filename)}")
-        assert get_extension(filename) in ['jpg', 'jpeg', 'png']
-        img = Image.open(img)
+            filename = img.name
+            print(f"filename is {filename} with extension {get_extension(filename)}")
+            assert get_extension(filename) in ['jpg', 'jpeg', 'png']
+            img = Image.open(img)
 
-        img_clone = detect(img, model, DETECTION_THRESHOLD)
-        st.image(img_clone)
+            img_clone = detect(img, model, DETECTION_THRESHOLD)
+            st.image(img_clone)
         
         
 
