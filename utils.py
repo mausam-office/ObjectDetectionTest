@@ -13,7 +13,6 @@ MODEL_DIR = 'models/detection/'
 def load_model(model_path):
     return YOLO(model_path)
 
-
 def inference(model, img, DETECTION_THRESHOLD):
     return model.predict(source=img, conf=DETECTION_THRESHOLD)
 
