@@ -127,9 +127,19 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:  # Camera
         input_data_type = st.radio("Choose input medium.", INPUT_DATA_TYPE, key='tab_camera_input_data_type')
 
         if input_data_type == INPUT_DATA_TYPE[0]:   # Video
-            st.info(f"Source type {input_data_type} is not yet implemented.")
+            # st.info(f"Source type {input_data_type} is not yet implemented.")
             # st.stop()
-            webrtc_streamer(key='webcam', video_frame_callback=video_frame_callback)
+            if platform=="linux" or platform=="linux2":
+                webrtc_streamer(
+                    key='webcam', 
+                    video_frame_callback=video_frame_callback,
+                    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+                )
+            elif platform=='win32':
+                webrtc_streamer(
+                    key='webcam', 
+                    video_frame_callback=video_frame_callback,
+                )
 
         elif input_data_type == INPUT_DATA_TYPE[1]:   # Image
             img = st.camera_input(label="Capture Image")
