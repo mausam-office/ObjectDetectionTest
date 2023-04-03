@@ -1,4 +1,3 @@
-import av
 import cv2
 import os
 import tempfile
@@ -7,9 +6,14 @@ import streamlit as st
 
 from PIL import Image
 from sys import platform
-from streamlit_webrtc import webrtc_streamer
+
 from utils import MODEL_DIR
 from utils import load_model, detect, get_extension, get_all_detection_models
+
+if platform=="win32":
+    import av
+    from streamlit_webrtc import webrtc_streamer
+
 
 
 INPUT_SOURCE_TYPE = ('File Upload', 'Camera')
@@ -44,12 +48,12 @@ elif task_btn==TASK_TYPE[1]:
     # Adjust detection threshold dynamically
     DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", min_value=0.00, max_value=1.0, value=INITIAL_DETECTION_THRESHOLD, step=0.01)
 
-def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
+def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:    # type: ignore
     """Function to perform live webcam detection"""
     frame = frame.to_ndarray(format='bgr24')
     frame = detect(frame, model, DETECTION_THRESHOLD)
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    return av.VideoFrame.from_ndarray(frame, format="bgr24")
+    return av.VideoFrame.from_ndarray(frame, format="bgr24")    # type: ignore
 
 if model is None:
     st.error("Model isn't loaded.")
@@ -144,7 +148,7 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:
             # Video Chosen
             if platform=='win32':
                 # when code runs in windows machine
-                webrtc_streamer(
+                webrtc_streamer(    # type: ignore
                     key='webcam', 
                     video_frame_callback=video_frame_callback,
                 )
