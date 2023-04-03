@@ -48,12 +48,14 @@ elif task_btn==TASK_TYPE[1]:
     # Adjust detection threshold dynamically
     DETECTION_THRESHOLD = st.sidebar.slider("Detection Threshold", min_value=0.00, max_value=1.0, value=INITIAL_DETECTION_THRESHOLD, step=0.01)
 
-def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:    # type: ignore
-    """Function to perform live webcam detection"""
-    frame = frame.to_ndarray(format='bgr24')
-    frame = detect(frame, model, DETECTION_THRESHOLD)
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    return av.VideoFrame.from_ndarray(frame, format="bgr24")    # type: ignore
+
+if platform=="win32":
+    def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:    # type: ignore
+        """Function to perform live webcam detection"""
+        frame = frame.to_ndarray(format='bgr24')
+        frame = detect(frame, model, DETECTION_THRESHOLD)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        return av.VideoFrame.from_ndarray(frame, format="bgr24")    # type: ignore
 
 if model is None:
     st.error("Model isn't loaded.")
@@ -150,7 +152,7 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:
                 # when code runs in windows machine
                 webrtc_streamer(    # type: ignore
                     key='webcam', 
-                    video_frame_callback=video_frame_callback,
+                    video_frame_callback=video_frame_callback,  #type: ignore
                 )
             else:
                 st.info(f"Source type {input_data_type} is not yet implemented.")
