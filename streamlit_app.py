@@ -101,6 +101,7 @@ if input_btn==INPUT_SOURCE_TYPE[0]:
                 if not ret:
                     break
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (864, 576))
                 pil_img = Image.fromarray(frame)
                 img_clone = detect(pil_img, model, DETECTION_THRESHOLD)
 
