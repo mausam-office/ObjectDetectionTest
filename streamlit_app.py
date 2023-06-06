@@ -7,14 +7,14 @@ import streamlit as st
 from PIL import Image
 from sys import platform
 
-from utils import MODEL_DIR
-from utils import load_model, detect, get_extension, get_all_detection_models
+from core.utils import MODEL_DIR
+from core.utils import load_model, detect, get_extension, get_all_detection_models
 
 if platform=="win32":
     import av
     from streamlit_webrtc import webrtc_streamer
 
-
+st.set_page_config(layout="wide")
 
 INPUT_SOURCE_TYPE = ('File Upload', 'Camera')
 TASK_TYPE = ('Image Classification', 'Object Detection')
@@ -36,7 +36,7 @@ if task_btn==TASK_TYPE[0]:
     st.stop()
 
 elif task_btn==TASK_TYPE[1]:
-    models = get_all_detection_models()
+    models = get_all_detection_models(MODEL_DIR)
     # Model name without file extensions
     model_name = st.sidebar.selectbox(
         "Models", [''.join(model.split('.')[:-1]) for model in models]
@@ -95,13 +95,21 @@ if input_btn==INPUT_SOURCE_TYPE[0]:
                 frame_container = st.empty()
             with plotted_frame:
                 detection_container = st.empty()
-            
+            scale_factor = 0.6
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
                     break
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (864, 576))
+
+                w, h, _ = frame.shape
+                if all([w>1000, h>1800]) or all([h>1000, w>1800]):
+                    # real time dection in ui is with scale factor = 0.6 for (1080, 1920) -> (648, 1152)
+                    scaled_w, scaled_h = int(round(w*scale_factor, 0)), int(round(h*scale_factor, 0))
+                    print((scaled_w, scaled_h))
+                    frame = cv2.resize(frame, (scaled_h, scaled_w))
+                    print(f"scaling applied.")
+                
                 pil_img = Image.fromarray(frame)
                 img_clone = detect(pil_img, model, DETECTION_THRESHOLD)
 
@@ -147,17 +155,35 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:
         # Choose either video or image
         input_data_type = st.radio("Choose input medium.", INPUT_DATA_TYPE, key='tab_camera_input_data_type')
 
-        if input_data_type == INPUT_DATA_TYPE[0]:   
+        if input_data_type == INPUT_DATA_TYPE[0]: 
             # Video Chosen
-            if platform=='win32':
-                # when code runs in windows machine
-                webrtc_streamer(    # type: ignore
-                    key='webcam', 
-                    video_frame_callback=video_frame_callback,  #type: ignore
-                )
-            else:
-                st.info(f"Source type {input_data_type} is not yet implemented.")
-                st.stop()
+            img_placeholder = st.empty()
+            try:
+                cap = cv2.VideoCapture('rtsp://192.168.10.229/')
+                while cap.isOpened():
+                    s, frame = cap.read()
+                    if not s:
+                        break
+                    print(f'frame shape {frame.shape}')
+
+                    detected_img = detect(frame, model, DETECTION_THRESHOLD)
+                    # cv2.imwrite('./captures/detected_img.jpg', detected_img)
+                    with img_placeholder.container():
+                        st.image(detected_img)
+                    #     time.sleep(0.1)
+            except:
+                print('Exception')
+                
+                
+            # if platform=='win32':
+            #     # when code runs in windows machine
+            #     webrtc_streamer(    # type: ignore
+            #         key='webcam', 
+            #         video_frame_callback=video_frame_callback,  #type: ignore
+            #     )
+            # else:
+            #     st.info(f"Source type {input_data_type} is not yet implemented.")
+            #     st.stop()
             # has issue with ICE and TURN servers
             # elif platform=="linux" or platform=="linux2":
             #     webrtc_streamer(
@@ -179,8 +205,7 @@ elif input_btn==INPUT_SOURCE_TYPE[1]:
 
             img_clone = detect(img, model, DETECTION_THRESHOLD)
             st.image(img_clone)
+            img = st.camera_input(label="Capture Image2", disabled=True)
         
         
-
-    
 
